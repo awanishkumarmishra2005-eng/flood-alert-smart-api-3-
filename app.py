@@ -1,6 +1,8 @@
-from flask import Flask, jsonify, request 
+from flask import Flask, jsonify, request
 from models.alert import db, Alert
+from services.risk_engine import calculate_risk
 import os
+import uuid
 
 app = Flask(__name__)
 
@@ -42,9 +44,7 @@ def get_alerts():
     })
 
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
-    @app.post("/api/alerts")
+@app.post("/api/alerts")
 def create_alert():
     data = request.get_json(silent=True) or {}
 
@@ -56,15 +56,28 @@ def create_alert():
             "error": "message and location are required"
         }), 400
 
+    severity = data.get("severity", "CRITICAL").upper()
+    water_level = data.get("water_level")
+    affected_people = data.get("affected_people", 0)
+
+    risk = calculate_risk(
+        severity=severity,
+        water_level=water_level,
+        affected_people=affected_people,
+        message=message
+    )
+
     alert = Alert(
-        id=str(__import__("uuid").uuid4()),
+        id=str(uuid.uuid4()),
         message=message,
         location=location,
         latitude=data.get("latitude"),
         longitude=data.get("longitude"),
-        severity=data.get("severity", "CRITICAL").upper(),
-        water_level=data.get("water_level"),
-        affected_people=data.get("affected_people", 0)
+        severity=severity,
+        water_level=water_level,
+        affected_people=affected_people,
+        risk_score=risk["score"],
+        risk_level=risk["level"]
     )
 
     db.session.add(alert)
@@ -73,5 +86,10 @@ def create_alert():
     return jsonify({
         "success": True,
         "message": "SOS alert created successfully",
-        "alert": alert.to_dict()
+        "alert": alert.to_dict(),
+        "risk_assessment": risk
     }), 201
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
