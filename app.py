@@ -1,7 +1,19 @@
 from flask import Flask, jsonify
-from datetime import datetime
+from models.alert import db, Alert
+import os
 
 app = Flask(__name__)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
+    "DATABASE_URL",
+    "sqlite:///flood_alerts.db"
+)
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db.init_app(app)
+
+with app.app_context():
+    db.create_all()
 
 
 @app.get("/")
@@ -16,8 +28,17 @@ def home():
 @app.get("/api/health")
 def health():
     return jsonify({
-        "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat()
+        "status": "healthy"
+    })
+
+
+@app.get("/api/alerts")
+def get_alerts():
+    alerts = Alert.query.order_by(Alert.created_at.desc()).all()
+
+    return jsonify({
+        "count": len(alerts),
+        "alerts": [alert.to_dict() for alert in alerts]
     })
 
 
