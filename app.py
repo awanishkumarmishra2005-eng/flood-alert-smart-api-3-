@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request 
 from models.alert import db, Alert
 import os
 
@@ -44,3 +44,34 @@ def get_alerts():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+    @app.post("/api/alerts")
+def create_alert():
+    data = request.get_json(silent=True) or {}
+
+    message = data.get("message")
+    location = data.get("location")
+
+    if not message or not location:
+        return jsonify({
+            "error": "message and location are required"
+        }), 400
+
+    alert = Alert(
+        id=str(__import__("uuid").uuid4()),
+        message=message,
+        location=location,
+        latitude=data.get("latitude"),
+        longitude=data.get("longitude"),
+        severity=data.get("severity", "CRITICAL").upper(),
+        water_level=data.get("water_level"),
+        affected_people=data.get("affected_people", 0)
+    )
+
+    db.session.add(alert)
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "message": "SOS alert created successfully",
+        "alert": alert.to_dict()
+    }), 201
