@@ -38,8 +38,10 @@ def health():
 
 @app.get("/api/alerts")
 def get_alerts():
-    alerts = Alert.query.order_by(Alert.created_at.desc()).all()
-
+    alerts = Alert.query.order_by(
+    Alert.risk_score.desc(),
+    Alert.created_at.desc()
+).all()
     return jsonify({
         "count": len(alerts),
         "alerts": [alert.to_dict() for alert in alerts]
@@ -92,14 +94,63 @@ duplicate_result = detect_duplicate(
 
     db.session.add(alert)
     db.session.commit()
+return jsonify({
+    "success": True,
+    "message": "SOS alert created successfully",
+    "alert": alert.to_dict(),
+    "risk_assessment": risk,
+    "duplicate_check": duplicate_result
+}), 201
+@app.patch("/api/alerts/<alert_id>/status")
+def update_alert_status(alert_id):
+    data = request.get_json(silent=True) or {}
+
+    new_status = data.get("status")
+
+    allowed_statuses = [
+        "ACTIVE",
+        "ACKNOWLEDGED",
+        "RESOLVED"
+    ]
+
+    if new_status not in allowed_statuses:
+        return jsonify({
+            "error": "Invalid status",
+            "allowed_statuses": allowed_statuses
+        }), 400
+
+    alert = Alert.query.get(alert_id)
+
+    if not alert:
+        return jsonify({
+            "error": "Alert not found"
+        }), 404
+
+    alert.status = new_status
+    db.session.commit()
 
     return jsonify({
         "success": True,
+        "message": "Alert status updated successfully",
+        "alert": alert.to_dict()
+    }), 200
+    if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+        return jsonify({
+        "success": True,
         "message": "SOS alert created successfully",
         "alert": alert.to_dict(),
-        "risk_assessment": risk
+        "risk_assessment": risk,
+        "duplicate_check": duplicate_result
     }), 201
+
+
+@app.patch("/api/alerts/<alert_id>/status")
+def update_alert_status(alert_id):
+    # new code here
+    ...
 
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+    
