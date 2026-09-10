@@ -55,10 +55,20 @@ def create_alert():
     message = data.get("message")
     location = data.get("location")
 
-    if not message or not location:
-        return jsonify({
-            "error": "message and location are required"
-        }), 400
+  if not message or not location:
+    return jsonify({
+        "error": "message and location are required"
+    }), 400
+
+if len(message) > 500:
+    return jsonify({
+        "error": "message must be 500 characters or less"
+    }), 400
+
+if len(location) > 255:
+    return jsonify({
+        "error": "location must be 255 characters or less"
+    }), 400
 
     severity = data.get("severity", "CRITICAL").upper()
     water_level = data.get("water_level")
