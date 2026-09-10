@@ -1,6 +1,8 @@
 from flask import Flask, jsonify, request
 from models.alert import db, Alert
 from services.risk_engine import calculate_risk
+from services.duplicate_detector 
+import detect_duplicate
 import os
 import uuid
 
