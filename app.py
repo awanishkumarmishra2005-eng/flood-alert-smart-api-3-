@@ -73,6 +73,18 @@ if len(location) > 255:
     severity = data.get("severity", "CRITICAL").upper()
     water_level = data.get("water_level")
     affected_people = data.get("affected_people", 0)
+    latitude=latitude,
+longitude=longitude,
+
+if latitude is not None and not (-90 <= float(latitude) <= 90):
+    return jsonify({
+        "error": "Invalid latitude"
+    }), 400
+
+if longitude is not None and not (-180 <= float(longitude) <= 180):
+    return jsonify({
+        "error": "Invalid longitude"
+    }), 400
     existing_alerts = Alert.query.all()
 
 duplicate_result = detect_duplicate(
