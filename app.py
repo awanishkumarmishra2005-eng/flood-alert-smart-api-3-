@@ -61,6 +61,14 @@ def create_alert():
     severity = data.get("severity", "CRITICAL").upper()
     water_level = data.get("water_level")
     affected_people = data.get("affected_people", 0)
+    existing_alerts = Alert.query.all()
+
+duplicate_result = detect_duplicate(
+    message=message,
+    location=location,
+    severity=severity,
+    existing_alerts=existing_alerts
+)
 
     risk = calculate_risk(
         severity=severity,
